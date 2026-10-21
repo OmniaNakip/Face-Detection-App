@@ -1,4 +1,3 @@
-```python
 import streamlit as st
 from ultralytics import YOLO
 from PIL import Image
@@ -248,4 +247,3 @@ st.divider()
 st.caption(
     "Face Detection System | Powered by YOLOv8 and Streamlit"
 )
-```
