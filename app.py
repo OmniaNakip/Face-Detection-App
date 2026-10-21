@@ -54,24 +54,6 @@ st.markdown("""
         padding: 30px 10px 25px;
     }
 
-    .logo {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 72px;
-        height: 72px;
-        border-radius: 22px;
-        border: 1px solid #42d6bd66;
-        background: linear-gradient(145deg, #142c3c, #202044);
-        box-shadow: 0 0 35px #42d6bd12;
-        margin-bottom: 18px;
-    }
-
-    .logo svg {
-        width: 39px;
-        height: 39px;
-        stroke: var(--primary);
-    }
 
     .hero h1 {
         font-size: clamp(2.5rem, 5vw, 3.7rem);
@@ -265,9 +247,10 @@ def load_model():
 
 # ==================== HEADER ====================
 
-st.html(f"""
+# ==================== HEADER ====================
+
+st.html("""
     <div class="hero">
-        <div class="logo">{render_icon("target", 39)}</div>
         <h1>Face<span>AI</span></h1>
         <p>Intelligent Face Detection powered by YOLOv8</p>
     </div>
