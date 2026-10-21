@@ -1,4 +1,3 @@
-```python
 import io
 import time
 
@@ -487,4 +486,4 @@ st.markdown("""
     FaceAI | Computer Vision | YOLOv8
 </div>
 """, unsafe_allow_html=True)
-```
+
