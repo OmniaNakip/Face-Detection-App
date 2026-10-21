@@ -105,6 +105,7 @@ st.markdown("""
         width: 23px;
         height: 23px;
         stroke: var(--primary);
+        fill: none;
         flex-shrink: 0;
     }
 
@@ -204,15 +205,18 @@ ICONS = {
         <circle cx="12" cy="12" r="5"/>
         <circle cx="12" cy="12" r="1"/>
     """,
+
     "image": """
         <rect x="3" y="3" width="18" height="18" rx="3"/>
         <circle cx="8.5" cy="8.5" r="1.5"/>
         <path d="m21 15-5-5L5 21"/>
     """,
+
     "settings": """
         <circle cx="12" cy="12" r="3"/>
         <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.5 2.6-.2-.1a1.7 1.7 0 0 0-1.8.1 1.7 1.7 0 0 0-.9 1.5v.2h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8-.1l-.2.1-1.5-2.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6.5v-3h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.5-2.6.2.1a1.7 1.7 0 0 0 1.8-.1 1.7 1.7 0 0 0 .9-1.5v-.2h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8.1l.2-.1 1.5 2.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.2v3h-.2a1.7 1.7 0 0 0-1.4 1z"/>
     """,
+
     "scan": """
         <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
         <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
@@ -242,13 +246,14 @@ def render_icon(name, size=22):
 
 
 def section_heading(icon_name, title):
-    st.markdown(
-        f'<div class="section-heading">'
-        f'{render_icon(icon_name)}'
-        f'<span>{title}</span>'
-        f'</div>',
-        unsafe_allow_html=True
-    )
+    icon_svg = render_icon(icon_name)
+
+    st.html(f"""
+        <div class="section-heading">
+            {icon_svg}
+            <span>{title}</span>
+        </div>
+    """)
 
 
 # ==================== LOAD YOLO MODEL ====================
@@ -260,13 +265,13 @@ def load_model():
 
 # ==================== HEADER ====================
 
-st.markdown(f"""
-<div class="hero">
-    <div class="logo">{render_icon("target", 39)}</div>
-    <h1>Face<span>AI</span></h1>
-    <p>Intelligent Face Detection powered by YOLOv8</p>
-</div>
-""", unsafe_allow_html=True)
+st.html(f"""
+    <div class="hero">
+        <div class="logo">{render_icon("target", 39)}</div>
+        <h1>Face<span>AI</span></h1>
+        <p>Intelligent Face Detection powered by YOLOv8</p>
+    </div>
+""")
 
 st.divider()
 
@@ -409,10 +414,7 @@ else:
                 unsafe_allow_html=True
             )
 
-            st.image(
-                image,
-                use_container_width=True
-            )
+            st.image(image, use_container_width=True)
 
         with result_col:
             st.markdown(
@@ -481,9 +483,8 @@ else:
 
 st.divider()
 
-st.markdown("""
-<div class="footer">
-    FaceAI | Computer Vision | YOLOv8
-</div>
-""", unsafe_allow_html=True)
-
+st.html("""
+    <div class="footer">
+        FaceAI | Computer Vision | YOLOv8
+    </div>
+""")
