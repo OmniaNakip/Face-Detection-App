@@ -1,135 +1,367 @@
-import streamlit as st
-from ultralytics import YOLO
-from PIL import Image
-import pandas as pd
+```python
+import io
 import time
 
-# --------------------------------------------------
-# Page Configuration
-# --------------------------------------------------
+import pandas as pd
+import streamlit as st
+from PIL import Image
+from ultralytics import YOLO
+
+
+# ==================== PAGE CONFIGURATION ====================
+
 st.set_page_config(
-    page_title="Face Detection | YOLOv8",
-    page_icon="🎯",
+    page_title="FaceAI | Face Detection",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --------------------------------------------------
-# Custom Styling
-# --------------------------------------------------
+
+# ==================== CUSTOM CSS ====================
+
 st.markdown("""
 <style>
+    :root {
+        --bg: #080d1b;
+        --surface: #111a2e;
+        --border: #293651;
+        --primary: #42d6bd;
+        --purple: #9b8afb;
+        --text: #f1f5f9;
+        --muted: #9ba9c4;
+    }
+
     .stApp {
-        background-color: #f7f9fc;
+        background:
+            radial-gradient(ellipse at 15% 0%, #172440 0%, transparent 42%),
+            radial-gradient(ellipse at 90% 20%, #211c42 0%, transparent 35%),
+            var(--bg);
+        color: var(--text);
     }
 
-    .main-title {
-        font-size: 2.5rem;
-        font-weight: 750;
-        color: #142c3c;
-        margin-bottom: 0.2rem;
+    [data-testid="stSidebar"] {
+        background: #0b1120;
+        border-right: 1px solid var(--border);
     }
 
-    .subtitle {
-        color: #64748b;
-        font-size: 1.05rem;
-        margin-bottom: 1.5rem;
+    .block-container {
+        max-width: 1400px;
+        padding-top: 2rem;
+        padding-bottom: 2rem;
     }
 
-    .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
+    .hero {
         text-align: center;
+        padding: 30px 10px 25px;
     }
 
-    .metric-label {
-        color: #64748b;
-        font-size: 0.9rem;
+    .logo {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 72px;
+        height: 72px;
+        border-radius: 22px;
+        border: 1px solid #42d6bd66;
+        background: linear-gradient(145deg, #142c3c, #202044);
+        box-shadow: 0 0 35px #42d6bd12;
+        margin-bottom: 18px;
     }
 
-    .metric-value {
-        color: #142c3c;
-        font-size: 1.8rem;
+    .logo svg {
+        width: 39px;
+        height: 39px;
+        stroke: var(--primary);
+    }
+
+    .hero h1 {
+        font-size: clamp(2.5rem, 5vw, 3.7rem);
+        font-weight: 800;
+        letter-spacing: -1.5px;
+        color: var(--text);
+        margin: 0;
+    }
+
+    .hero h1 span {
+        color: var(--primary);
+    }
+
+    .hero p {
+        color: var(--muted);
+        font-size: 1.05rem;
+        margin-top: 12px;
+    }
+
+    .section-heading {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--text);
+        font-size: 1.15rem;
         font-weight: 700;
+        margin: 22px 0 15px;
+    }
+
+    .section-heading svg {
+        width: 23px;
+        height: 23px;
+        stroke: var(--primary);
+        flex-shrink: 0;
+    }
+
+    .image-heading {
+        color: var(--text);
+        font-size: 1rem;
+        font-weight: 650;
+        margin-bottom: 12px;
+    }
+
+    div[data-testid="stMetric"] {
+        background: linear-gradient(145deg, #151f35, #10182a);
+        border: 1px solid var(--border);
+        padding: 18px;
+        border-radius: 15px;
+    }
+
+    div[data-testid="stMetricLabel"] {
+        color: var(--muted);
+    }
+
+    div[data-testid="stMetricValue"] {
+        color: var(--primary);
     }
 
     div[data-testid="stImage"] img {
+        border: 1px solid var(--border);
+        border-radius: 14px;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 10px;
+        background: #0e1628;
+        padding: 7px;
+        border: 1px solid var(--border);
+        border-radius: 13px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        color: var(--muted);
+        border-radius: 9px;
+        padding: 10px 18px;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: #193448;
+        color: var(--primary);
+    }
+
+    .stButton button,
+    .stDownloadButton button {
+        background: linear-gradient(100deg, #42d6bd, #8d80f9);
+        color: #08121e;
+        border: none;
         border-radius: 10px;
+        font-weight: 700;
+        min-height: 44px;
+    }
+
+    .stButton button:hover,
+    .stDownloadButton button:hover {
+        color: white;
+        border: 1px solid var(--primary);
+    }
+
+    [data-testid="stFileUploader"] {
+        background: #111a2e;
+        border: 1px dashed #405271;
+        border-radius: 14px;
+        padding: 12px;
+    }
+
+    .stCaption,
+    [data-testid="stCaptionContainer"] {
+        color: var(--muted);
+    }
+
+    hr {
+        border-color: var(--border);
+    }
+
+    .footer {
+        color: #8290aa;
+        text-align: center;
+        padding: 20px 0 5px;
+        font-size: 0.85rem;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --------------------------------------------------
-# Load Trained Model
-# --------------------------------------------------
+
+# ==================== SVG ICONS ====================
+
+ICONS = {
+    "target": """
+        <circle cx="12" cy="12" r="9"/>
+        <circle cx="12" cy="12" r="5"/>
+        <circle cx="12" cy="12" r="1"/>
+    """,
+    "image": """
+        <rect x="3" y="3" width="18" height="18" rx="3"/>
+        <circle cx="8.5" cy="8.5" r="1.5"/>
+        <path d="m21 15-5-5L5 21"/>
+    """,
+    "settings": """
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-1.5 2.6-.2-.1a1.7 1.7 0 0 0-1.8.1 1.7 1.7 0 0 0-.9 1.5v.2h-3v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8-.1l-.2.1-1.5-2.6.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H6.5v-3h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1 1.5-2.6.2.1a1.7 1.7 0 0 0 1.8-.1 1.7 1.7 0 0 0 .9-1.5v-.2h3v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8.1l.2-.1 1.5 2.6-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.5 1h.2v3h-.2a1.7 1.7 0 0 0-1.4 1z"/>
+    """,
+    "scan": """
+        <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
+        <path d="M16 4h3a1 1 0 0 1 1 1v3"/>
+        <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+        <path d="M8 20H5a1 1 0 0 1-1-1v-3"/>
+        <path d="M4 12h16"/>
+    """,
+}
+
+
+def render_icon(name, size=22):
+    paths = ICONS.get(name, ICONS["target"])
+
+    return f"""
+    <svg xmlns="http://www.w3.org/2000/svg"
+         width="{size}" height="{size}"
+         viewBox="0 0 24 24"
+         fill="none"
+         stroke="currentColor"
+         stroke-width="1.7"
+         stroke-linecap="round"
+         stroke-linejoin="round"
+         aria-hidden="true">
+        {paths}
+    </svg>
+    """
+
+
+def section_heading(icon_name, title):
+    st.markdown(
+        f'<div class="section-heading">'
+        f'{render_icon(icon_name)}'
+        f'<span>{title}</span>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
+
+
+# ==================== LOAD YOLO MODEL ====================
+
 @st.cache_resource
 def load_model():
     return YOLO("best.pt")
 
 
-# --------------------------------------------------
-# Header
-# --------------------------------------------------
-st.markdown(
-    '<div class="main-title">Face Detection System</div>',
-    unsafe_allow_html=True
-)
+# ==================== HEADER ====================
 
-st.markdown(
-    '<div class="subtitle">'
-    'An AI-powered application for detecting faces in images using YOLOv8.'
-    '</div>',
-    unsafe_allow_html=True
-)
+st.markdown(f"""
+<div class="hero">
+    <div class="logo">{render_icon("target", 39)}</div>
+    <h1>Face<span>AI</span></h1>
+    <p>Intelligent Face Detection powered by YOLOv8</p>
+</div>
+""", unsafe_allow_html=True)
 
 st.divider()
 
-# --------------------------------------------------
-# Sidebar
-# --------------------------------------------------
+
+# ==================== SIDEBAR ====================
+
 with st.sidebar:
-    st.header("Detection Settings")
+    section_heading("settings", "Detection Settings")
 
     confidence = st.slider(
         "Confidence Threshold",
         min_value=0.10,
         max_value=1.00,
-        value=0.25,
+        value=0.40,
         step=0.05,
-        help="Minimum confidence required to display a detected face."
+        help="Minimum confidence required for a detection."
     )
 
-    st.info(
-        "Upload an image to detect faces. "
-        "The model will highlight detected faces and display confidence scores."
+    st.caption(
+        "Higher thresholds may reduce false detections, "
+        "but can also cause missed faces."
+    )
+
+    st.divider()
+
+    st.markdown("#### About FaceAI")
+
+    st.write(
+        "A computer vision application that detects faces "
+        "in images using a custom-trained YOLOv8 model."
     )
 
     st.caption("Model: Custom YOLOv8")
     st.caption("Task: Face Detection")
 
-# --------------------------------------------------
-# Image Upload
-# --------------------------------------------------
-uploaded_file = st.file_uploader(
-    "Upload an image",
-    type=["jpg", "jpeg", "png"],
-    help="Supported formats: JPG, JPEG, PNG"
-)
 
-if uploaded_file is None:
-    st.markdown("### Get Started")
+# ==================== INPUT OPTIONS ====================
+
+section_heading("scan", "Choose Your Input")
+
+upload_tab, camera_tab = st.tabs([
+    "Upload Image",
+    "Camera Capture"
+])
+
+image_file = None
+
+with upload_tab:
+    st.markdown("#### Upload an image")
+
     st.write(
-        "Upload an image using the box above to start face detection."
+        "Select an image from your device to detect faces."
+    )
+
+    uploaded_file = st.file_uploader(
+        "Choose an image file",
+        type=["jpg", "jpeg", "png"],
+        key="image_upload"
+    )
+
+    if uploaded_file is not None:
+        image_file = uploaded_file
+
+
+with camera_tab:
+    st.markdown("#### Capture an image")
+
+    st.write(
+        "Allow camera access in your browser and take a photo."
+    )
+
+    camera_file = st.camera_input(
+        "Take a picture",
+        key="camera_capture"
+    )
+
+    if camera_file is not None:
+        image_file = camera_file
+
+
+# ==================== FACE DETECTION ====================
+
+if image_file is None:
+    st.info(
+        "Upload an image or capture a photo to get started."
     )
 
 else:
     try:
-        image = Image.open(uploaded_file).convert("RGB")
+        image = Image.open(image_file).convert("RGB")
 
-        with st.spinner("Loading model and detecting faces..."):
+        with st.spinner("Analyzing image..."):
             model = load_model()
+
             start_time = time.perf_counter()
 
             results = model.predict(
@@ -142,62 +374,73 @@ else:
 
         result = results[0]
 
-        # YOLO plot() returns a BGR image; convert it to RGB.
         detected_image = Image.fromarray(
             result.plot()[..., ::-1]
         )
 
         face_count = len(result.boxes)
 
-        # ------------------------------------------
-        # Summary Metrics
-        # ------------------------------------------
-        st.subheader("Detection Summary")
+        # Detection Summary
+        st.divider()
+        section_heading("scan", "Detection Summary")
 
         col1, col2, col3 = st.columns(3)
 
         col1.metric("Faces Detected", face_count)
-        col2.metric("Processing Time", f"{elapsed_time:.2f} sec")
-        col3.metric(
-            "Image Resolution",
-            f"{image.width} × {image.height}"
+
+        col2.metric(
+            "Processing Time",
+            f"{elapsed_time:.2f} sec"
         )
 
-        st.divider()
+        col3.metric(
+            "Image Resolution",
+            f"{image.width} x {image.height}"
+        )
 
-        # ------------------------------------------
-        # Image Comparison
-        # ------------------------------------------
-        st.subheader("Detection Results")
+        # Original and Detected Images
+        st.divider()
+        section_heading("image", "Detection Results")
 
         original_col, result_col = st.columns(2)
 
         with original_col:
-            st.markdown("#### Original Image")
-            st.image(image, use_container_width=True)
-
-        with result_col:
-            st.markdown("#### Detected Faces")
-            st.image(detected_image, use_container_width=True)
-
-        # ------------------------------------------
-        # Confidence Details
-        # ------------------------------------------
-        if face_count > 0:
-            st.subheader("Detection Details")
-
-            confidence_scores = (
-                result.boxes.conf.cpu().tolist()
+            st.markdown(
+                '<div class="image-heading">Original Image</div>',
+                unsafe_allow_html=True
             )
 
+            st.image(
+                image,
+                use_container_width=True
+            )
+
+        with result_col:
+            st.markdown(
+                '<div class="image-heading">Detected Faces</div>',
+                unsafe_allow_html=True
+            )
+
+            st.image(
+                detected_image,
+                use_container_width=True
+            )
+
+        # Confidence Details
+        if face_count > 0:
+            st.divider()
+            section_heading("target", "Detection Details")
+
+            scores = result.boxes.conf.cpu().tolist()
+
             details = pd.DataFrame({
-                "Face": [
+                "Detection": [
                     f"Face {i + 1}"
                     for i in range(face_count)
                 ],
-                "Confidence": [
+                "Confidence Score": [
                     f"{score * 100:.2f}%"
-                    for score in confidence_scores
+                    for score in scores
                 ]
             })
 
@@ -209,41 +452,39 @@ else:
 
         else:
             st.warning(
-                "No faces were detected. "
-                "Try another image or lower the confidence threshold."
+                "No faces detected. Try another image "
+                "or lower the confidence threshold."
             )
 
-        # ------------------------------------------
         # Download Result
-        # ------------------------------------------
         st.divider()
 
-        image_bytes = None
-        import io
-
-        image_buffer = io.BytesIO()
-        detected_image.save(image_buffer, format="PNG")
-        image_bytes = image_buffer.getvalue()
+        buffer = io.BytesIO()
+        detected_image.save(buffer, format="PNG")
 
         st.download_button(
             label="Download Detection Result",
-            data=image_bytes,
+            data=buffer.getvalue(),
             file_name="face_detection_result.png",
-            mime="image/png"
+            mime="image/png",
+            icon=":material/download:"
         )
 
     except Exception as error:
         st.error(
             "An error occurred while processing the image. "
-            "Please check that the model file is valid and try again."
+            "Please check the model file and try again."
         )
         st.exception(error)
 
-# --------------------------------------------------
-# Footer
-# --------------------------------------------------
+
+# ==================== FOOTER ====================
+
 st.divider()
 
-st.caption(
-    "Face Detection System | Powered by YOLOv8 and Streamlit"
-)
+st.markdown("""
+<div class="footer">
+    FaceAI | Computer Vision | YOLOv8
+</div>
+""", unsafe_allow_html=True)
+```
